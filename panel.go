@@ -169,7 +169,20 @@ type (
 		FieldConfig     *FieldConfig     `json:"fieldConfig,omitempty"`
 	}
 	FieldConfig struct {
-		Defaults FieldConfigDefaults `json:"defaults"`
+		Defaults  FieldConfigDefaults `json:"defaults"`
+		Overrides []FieldOverride     `json:"overrides"`
+	}
+	FieldOverride struct {
+		Matcher    FieldOverrideMatcher      `json:"matcher"`
+		Properties []FieldOverrideProperties `json:"properties"`
+	}
+	FieldOverrideMatcher struct {
+		ID      string      `json:"id"`
+		Options interface{} `json:"options"`
+	}
+	FieldOverrideProperties struct {
+		ID    string      `json:"id"`
+		Value interface{} `json:"value"`
 	}
 	Options struct {
 		Orientation   string `json:"orientation"`
