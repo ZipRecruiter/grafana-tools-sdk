@@ -601,7 +601,8 @@ type Target struct {
 	Step           int    `json:"step,omitempty"`
 	LegendFormat   string `json:"legendFormat,omitempty"`
 	Instant        bool   `json:"instant,omitempty"`
-	Format         string `json:"format,omitempty"`
+	// Format can be either a string (e.g., "table") or a number (e.g., 1 for Athena datasources)
+	Format interface{} `json:"format,omitempty"`
 
 	// For InfluxDB
 	Measurement string `json:"measurement,omitempty"`

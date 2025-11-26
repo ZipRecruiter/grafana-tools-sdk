@@ -254,3 +254,66 @@ func TestUnmarshal_DashboardTableWithTransformations90(t *testing.T) {
 		t.Fatalf("transformation bucket size should be 5.0, but got %+v", options["bucketSize"])
 	}
 }
+
+func TestUnmarshal_DashboardWithAthenaNumericFormatRoundtrip(t *testing.T) {
+	// Test that Athena datasource dashboards with numeric format values
+	// preserve the numeric type during roundtrip (unmarshal + marshal)
+	raw, err := ioutil.ReadFile("testdata/dashboard-with-athena-datasource.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Unmarshal the dashboard
+	var board sdk.Board
+	if err := json.Unmarshal(raw, &board); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify the dashboard was unmarshaled correctly
+	require.Lenf(t, board.Panels, 1, "expected 1 panel but got %d", len(board.Panels))
+	panel := board.Panels[0]
+	require.Lenf(t, panel.TimeseriesPanel.Targets, 1, "expected 1 target but got %d", len(panel.TimeseriesPanel.Targets))
+
+	// Marshal it back to JSON
+	output, err := json.Marshal(board)
+	if err != nil {
+		t.Fatalf("failed to marshal dashboard: %v", err)
+	}
+
+	// Parse both original and output to compare the format field type
+	var original map[string]interface{}
+	var result map[string]interface{}
+
+	if err := json.Unmarshal(raw, &original); err != nil {
+		t.Fatalf("failed to unmarshal original: %v", err)
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		t.Fatalf("failed to unmarshal output: %v", err)
+	}
+
+	// Navigate to the format field in the first panel's first target
+	originalPanels := original["panels"].([]interface{})
+	originalTargets := originalPanels[0].(map[string]interface{})["targets"].([]interface{})
+	originalFormat := originalTargets[0].(map[string]interface{})["format"]
+
+	resultPanels := result["panels"].([]interface{})
+	resultTargets := resultPanels[0].(map[string]interface{})["targets"].([]interface{})
+	resultFormat := resultTargets[0].(map[string]interface{})["format"]
+
+	// Both should be numbers (float64 in Go's JSON unmarshaling)
+	originalNum, originalIsNumber := originalFormat.(float64)
+	resultNum, resultIsNumber := resultFormat.(float64)
+
+	if !originalIsNumber {
+		t.Errorf("original format should be a number but got %T", originalFormat)
+	}
+
+	if !resultIsNumber {
+		t.Errorf("result format should be a number but got %T", resultFormat)
+	}
+
+	if originalNum != resultNum {
+		t.Errorf("format values don't match: original=%v, result=%v", originalNum, resultNum)
+	}
+}
